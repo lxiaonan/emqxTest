@@ -1,20 +1,18 @@
 package com.xiaonan.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.*;
 
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/messages")
 @Slf4j
-public class MqttSubscriber {
+public class MqttSubscriber implements MqttCallback {
     private static final String BROKER = "tcp://localhost:1883";
     private static final String TOPIC = "test/topic";
     private static final String USERNAME = "test";
@@ -29,6 +27,7 @@ public class MqttSubscriber {
         }
         try {
             MqttClient client = new MqttClient(BROKER, MqttClient.generateClientId());
+            client.setCallback(this);
             // MQTT 连接选项
             MqttConnectOptions connOpts = new MqttConnectOptions();
             connOpts.setUserName(USERNAME);
@@ -39,12 +38,7 @@ public class MqttSubscriber {
             log.info("Connecting to broker: " + BROKER);
             client.connect(connOpts);
             // 订阅消息
-            client.subscribe(TOPIC, (topic, message) -> {
-                String payload = new String(message.getPayload());
-                char type = extractType(payload);
-                long time = extractTime(payload);
-                typeMap.get(type).add(time);
-            });
+            client.subscribe(TOPIC);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -82,5 +76,23 @@ public class MqttSubscriber {
     // 提前时间戳
     private long extractTime(String payload) {
         return Long.valueOf(payload.split(",")[0].substring(payload.indexOf(":") + 1));
+    }
+
+    @Override
+    public void connectionLost(Throwable throwable) {
+        System.out.println("Connection lost: " + throwable.getMessage());
+    }
+
+    @Override
+    public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
+        String payload = new String(mqttMessage.getPayload(), StandardCharsets.UTF_8);
+        char type = extractType(payload);
+        long time = extractTime(payload);
+        typeMap.get(type).add(time);
+    }
+
+    @Override
+    public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+
     }
 }

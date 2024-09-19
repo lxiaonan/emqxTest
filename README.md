@@ -43,5 +43,8 @@
 
 - 通过 HTTP GET 请求访问 `/api/messages/count` 接口，传入 `startTime` 和 `endTime` 来获取 A、B、C、D 四种类型消息的计数。
 
-### 示例请求
+## 测试
+### 1、可以访问`EmqxTest`测试类执行setUp方法进行测试
+### 2、启动`Application` 类，然后编译并运行 `DataPublisher` 类 浏览器访问请求访问测试
+示例请求
 - http://localhost:8080/api/messages/count?startTime=1726638439&endTime=1726638739
